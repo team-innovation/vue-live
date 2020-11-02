@@ -104,6 +104,10 @@ export default {
       });
     },
     handleError(e) {
+      // Adjust the runtime errors for mozilla and chrome
+      if (!e.loc) {
+        e.loc = getLocFromStack(e);
+      }
       /**
        * Emitted every time the component rendered throws an error
        * Catches runtime and compilation errors
@@ -199,6 +203,28 @@ export default {
     },
   },
 };
+
+function getLocFromStack(e) {
+  // on firefox we can use lineMumber
+  if (e.lineNumber) {
+    return {
+      line: e.lineNumber,
+      column: e.columnNumber - 1,
+    };
+  }
+
+  // on Chrome e.stack works well too
+  if (!e.stack) {
+    return undefined;
+  }
+  const errorLine = e.stack.split("\n")[1];
+  const posStingArray = /:(\d+):(\d+)\)$/.exec(errorLine);
+
+  return {
+    line: parseInt(posStingArray[1], 10) - 2,
+    column: parseInt(posStingArray[2], 10) - 1,
+  };
+}
 </script>
 
 <style>
